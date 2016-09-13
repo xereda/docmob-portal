@@ -1,5 +1,52 @@
 <template lang='html'>
 
+  <modal :title="crudController.newModalTitle"  :show.sync="showModal" effect="fade" large>
+    <div slot="modal-body" class="modal-body">
+      <div class="container-fluid">
+
+        <form>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="email">Nome</label>
+                <input type="text" class="form-control" id="name" v-model="collection.name" placeholder="Nome">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" class="form-control" id="email" v-model="collection.email" placeholder="Email">
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" class="form-control" id="password" v-model="collection.password" placeholder="Senha">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="password">Confirmação da senha</label>
+                <input type="password" class="form-control" id="password" v-model="passwordCheck" placeholder="Repita a senha">
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div slot="modal-footer" class="modal-footer">
+      <button type="button" class="btn btn-default" @click="showModal = false">
+        <span class='glyphicon glyphicon-off' aria-hidden='true'></span> Sair
+      </button>
+      <button type="button" class="btn btn-success" @click="showModal = false">
+        <span class='glyphicon glyphicon-floppy-disk' aria-hidden='true'></span> Salvar
+      </button>
+    </div>
+  </modal>
+
+
   <div class='container'>
 
     <div class='page-header'>
@@ -104,7 +151,7 @@
         </ul>
       </div>
       <div class='col-md-6 newButton'>
-        <button type='button' class='btn btn-primary btn-lg'>
+        <button type='button' class='btn btn-primary btn-lg' @click='showModal = !showModal'>
           <span class='glyphicon glyphicon-plus-sign' aria-hidden='true'></span> Novo
         </button>
         <button type='button' class='btn btn-danger btn-lg' @click='removeAny()'>
@@ -117,13 +164,23 @@
 </template>
 
 <script>
-import { dropdown } from 'vue-strap'
+import { dropdown, modal } from 'vue-strap'
 
 export default {
 
   data () {
     return {
-      showRight: false
+      collection: {
+        email: '',
+        user: '',
+        password: '',
+        admin: false,
+        active: true
+      },
+      showModal: false,
+      crudController: {
+        newModalTitle: 'Novo usuário'
+      }
     }
   },
   computed: {
@@ -169,7 +226,8 @@ export default {
     }
   },
   components: {
-    dropdown
+    dropdown,
+    modal
   },
   vuex: {
     getters: {
