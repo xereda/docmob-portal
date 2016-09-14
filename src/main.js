@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import App from './modules/App'
+import VueResource from 'vue-resource'
 
 import 'bootstrap/dist/css/bootstrap.css'
 import 'font-awesome/css/font-awesome.css'
@@ -11,7 +12,7 @@ import UsersRoutes from './modules/Users/router/routes'
 import swal from 'sweetalert'
 import 'sweetalert/dist/sweetalert.css'
 
-Vue.use(VueRouter, swal)
+Vue.use(VueRouter, swal, VueResource)
 
 const router = new VueRouter()
 

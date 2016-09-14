@@ -5,42 +5,50 @@
       <div class="container-fluid">
 
         <form>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label for="email">Nome</label>
-                <input type="text" class="form-control" id="name" v-model="collection.name" placeholder="Nome">
+          <form-group :valid.sync="valid.all">
+            <div class="row">
+              <div class="col-md-6">
+                <bs-input type="text" :value.sync="collection.user" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
+              </div>
+              <div class="col-md-6">
+                <bs-input type="email" :value.sync="collection.email" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" class="form-control" id="email" v-model="collection.email" placeholder="Email">
+            <div class="row">
+              <div class="col-md-6">
+                <bs-input type="password" :value.sync="collection.password" label="Senha" error="Informe corretamente a senha!" placeholder="Informe a senha do usuário" minlength="5" required icon></bs-input>
+              </div>
+              <div class="col-md-6">
+                <bs-input :match="collection.password" type="password" label="Repita a senha" error="Informe a mesma senha!" placeholder="Repita a senha do usuário" minlength="5" required icon></bs-input>
               </div>
             </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label for="password">Senha</label>
-                <input type="password" class="form-control" id="password" v-model="collection.password" placeholder="Senha">
+            <div class="row">
+              <div class="col-md-2">
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox" v-model="collection.active"> Ativo?
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox" v-model="collection.admin"> Administrador?
+                  </label>
+                </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label for="password">Confirmação da senha</label>
-                <input type="password" class="form-control" id="password" v-model="passwordCheck" placeholder="Repita a senha">
-              </div>
-            </div>
-          </div>
+          </form-group>
         </form>
       </div>
+
+
     </div>
     <div slot="modal-footer" class="modal-footer">
       <button type="button" class="btn btn-default" @click="showModal = false">
         <span class='glyphicon glyphicon-off' aria-hidden='true'></span> Sair
       </button>
-      <button type="button" class="btn btn-success" @click="showModal = false">
+      <button type="button" class="btn btn-success" @click="showModal = false" :disabled="(valid.all === false)">
         <span class='glyphicon glyphicon-floppy-disk' aria-hidden='true'></span> Salvar
       </button>
     </div>
@@ -62,8 +70,12 @@
     <div class='row margin'>
       <div class='col-md-12'>
         <div class='inner-addon left-addon'>
-            <i class='glyphicon glyphicon-search icon-search'></i>
-            <input type='text' class='form-control input-lg' placeholder='Informe um texto para filtrar...' />
+
+          <popover effect="fade" placement="bottom" title="PESQUISA" trigger="focus" content="Após digitar o filtro, pressione a tecla 'ENTER' para iniciar a pesquisa.">
+              <input type='text' class='form-control input-lg' placeholder='Informe um texto para filtrar...' />
+              <i class='glyphicon glyphicon-search icon-search'></i>
+          </popover>
+
         </div>
       </div>
     </div>
@@ -157,26 +169,35 @@
         <button type='button' class='btn btn-danger btn-lg' @click='removeAny()'>
           <span class='glyphicon glyphicon-trash' aria-hidden='true'></span> Excluir
         </button>
+        <button type='button' class='btn btn-info btn-lg' @click='getAll()'>
+          <span class='glyphicon glyphicon-open' aria-hidden='true'></span> Buscar...
+        </button>
       </div>
     </div>
+
+    {{ $data | json }}
 
   </div>
 </template>
 
 <script>
-import { dropdown, modal } from 'vue-strap'
+import { dropdown, modal, popover, input, formGroup } from 'vue-strap'
 
 export default {
 
   data () {
     return {
+      valid: {
+        all: false
+      },
       collection: {
         email: '',
         user: '',
         password: '',
         admin: false,
-        active: true
+        active: 'true'
       },
+      passwordCheck: '',
       showModal: false,
       crudController: {
         newModalTitle: 'Novo usuário'
@@ -187,9 +208,18 @@ export default {
     // charts: []
   },
   ready () {
+    console.log(this.$http)
   },
   attached () {},
   methods: {
+    getAll () {
+      // GET /someUrl
+      this.$http.get('https://jsonplaceholder.typicode.com/comments').then((response) => {
+        // success callback
+      }, (response) => {
+        // error callback
+      })
+    },
     removeAny (doc) {
       console.log(doc)
       if (doc === undefined) {
@@ -227,7 +257,10 @@ export default {
   },
   components: {
     dropdown,
-    modal
+    modal,
+    popover,
+    'bsInput': input,
+    formGroup
   },
   vuex: {
     getters: {
@@ -284,5 +317,6 @@ export default {
   .fullWidth {
     width: 100%;
   }
+
 
 </style>
