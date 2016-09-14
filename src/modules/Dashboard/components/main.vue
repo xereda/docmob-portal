@@ -86,20 +86,25 @@
           <thead>
             <tr class='active'>
               <th>
-                coluna 1
               </th>
-              <th>
-                coluna 2
+              <th class="">
+                Nome
               </th>
-              <th>
-                coluna 2
+              <th class="hidden-xs">
+                E-mail
+              </th>
+              <th class="hidden-xs">
+                Ativo?
+              </th>
+              <th class="hidden-xs">
+                Administrador?
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr>
+            <tr v-for="doc in docs" :class="(selecteds.indexOf(doc._id) > -1) ? 'info': ''" style="cursor: pointer;">
               <td>
-                <input type='checkbox' class='lg'>
+                <input type='checkbox' class='lg' v-model='selecteds' :value='doc._id'>
                 <button type='button' class='btn btn-info btn-xs' aria-label='visualizar'>
                   <span class='glyphicon glyphicon-search' aria-hidden='true'></span>
                 </button>
@@ -110,31 +115,17 @@
                   <span class='glyphicon glyphicon-trash' aria-hidden='true'></span>
                 </button>
               </td>
-              <td>
-                valor c2
+              <td @click="selectRow(doc._id)" >
+                {{ doc.name }}
               </td>
-              <td>
-                valor c3
+              <td class="hidden-xs" @click="selectRow(doc._id)" >
+                {{ doc.email }}
               </td>
-            </tr>
-            <tr>
-              <td>
+              <td class="hidden-xs" @click="selectRow(doc._id)" >
+                {{ doc.active ? 'Sim' : 'Não' }}
               </td>
-              <td>
-                valor c2
-              </td>
-              <td>
-                valor c3
-              </td>
-            </tr>
-            <tr>
-              <td>
-              </td>
-              <td>
-                valor c2
-              </td>
-              <td>
-                valor c3
+              <td class="hidden-xs" @click="selectRow(doc._id)" >
+                {{ doc.admin ? 'Sim' : 'Não' }}
               </td>
             </tr>
           </tbody>
@@ -166,7 +157,7 @@
         <button type='button' class='btn btn-primary btn-lg' @click='showModal = !showModal'>
           <span class='glyphicon glyphicon-plus-sign' aria-hidden='true'></span> Novo
         </button>
-        <button type='button' class='btn btn-danger btn-lg' @click='removeAny()'>
+        <button type='button' class='btn btn-danger btn-lg' :disabled="(selecteds.length < 2)" @click='removeAny()'>
           <span class='glyphicon glyphicon-trash' aria-hidden='true'></span> Excluir
         </button>
         <button type='button' class='btn btn-info btn-lg' @click='getAll()'>
@@ -175,13 +166,15 @@
       </div>
     </div>
 
-    {{ $data | json }}
+    <spinner v-ref:spinner size="lg" :fixed="false"></spinner>
+
+    {{ $data.selecteds | json }}
 
   </div>
 </template>
 
 <script>
-import { dropdown, modal, popover, input, formGroup } from 'vue-strap'
+import { dropdown, modal, popover, input, formGroup, spinner } from 'vue-strap'
 
 export default {
 
@@ -190,6 +183,11 @@ export default {
       valid: {
         all: false
       },
+      control: {
+        loading: false
+      },
+      selecteds: [],
+      docs: [],
       collection: {
         email: '',
         user: '',
@@ -208,16 +206,28 @@ export default {
     // charts: []
   },
   ready () {
-    console.log(this.$http)
   },
   attached () {},
   methods: {
+    selectRow (_id) {
+      console.log(_id)
+      if (this.selecteds.indexOf(_id) > -1) {
+        this.selecteds.splice(this.selecteds.indexOf(_id), 1)
+      } else {
+        this.selecteds.push(_id)
+      }
+    },
     getAll () {
+      this.$refs.spinner.show()
+
       // GET /someUrl
-      this.$http.get('https://jsonplaceholder.typicode.com/comments').then((response) => {
-        // success callback
+      this.$http.get('http://localhost:5000/users').then((response) => {
+        console.log(response.body)
+        this.docs = response.body
+        this.$refs.spinner.hide()
       }, (response) => {
         // error callback
+        this.$refs.spinner.hide()
       })
     },
     removeAny (doc) {
@@ -260,7 +270,8 @@ export default {
     modal,
     popover,
     'bsInput': input,
-    formGroup
+    formGroup,
+    spinner
   },
   vuex: {
     getters: {
@@ -317,6 +328,7 @@ export default {
   .fullWidth {
     width: 100%;
   }
+
 
 
 </style>

@@ -9,10 +9,11 @@ import 'font-awesome/css/font-awesome.css'
 import DashboardRoutes from './modules/Dashboard/router/routes'
 import UsersRoutes from './modules/Users/router/routes'
 
-import swal from 'sweetalert'
+import 'sweetalert'
 import 'sweetalert/dist/sweetalert.css'
 
-Vue.use(VueRouter, swal, VueResource)
+Vue.use(VueRouter)
+Vue.use(VueResource)
 
 const router = new VueRouter()
 
