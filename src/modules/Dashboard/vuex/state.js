@@ -1,3 +1,5 @@
 export default {
-  charts: ['chart1', 'chart2', 'chart3']
+  session: {
+    user_id: '57a2bb75be785a529de5fb333'
+  }
 }

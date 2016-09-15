@@ -1,6 +1,6 @@
 <template lang='html'>
 
-  <modal :title="crudController.newModalTitle"  :show.sync="showModal" effect="fade" large>
+  <modal :title="crudController.newModalTitle"  :show.sync="control.showModal" effect="fade" large>
     <div slot="modal-body" class="modal-body">
       <div class="container-fluid">
 
@@ -8,7 +8,7 @@
           <form-group :valid.sync="valid.all">
             <div class="row">
               <div class="col-md-6">
-                <bs-input type="text" :value.sync="collection.user" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
+                <bs-input type="text" :value.sync="collection.name" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
               </div>
               <div class="col-md-6">
                 <bs-input type="email" :value.sync="collection.email" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
@@ -40,20 +40,27 @@
             </div>
           </form-group>
         </form>
+
+        <accordion :one-at-atime="true" type="danger" v-show="control.API.visible">
+          <panel type="danger">
+            <strong slot="header"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Erros retornados pela API</strong>
+            {{  }}
+          </panel>
+        </accordion>
+
       </div>
 
 
     </div>
     <div slot="modal-footer" class="modal-footer">
-      <button type="button" class="btn btn-default" @click="showModal = false">
+      <button type="button" class="btn btn-default" @click="control.showModal = false">
         <span class='glyphicon glyphicon-off' aria-hidden='true'></span> Sair
       </button>
-      <button type="button" class="btn btn-success" @click="showModal = false" :disabled="(valid.all === false)">
+      <button type="button" class="btn btn-success" @click="newDoc()" :disabled="(valid.all === false)">
         <span class='glyphicon glyphicon-floppy-disk' aria-hidden='true'></span> Salvar
       </button>
     </div>
   </modal>
-
 
   <div class='container'>
 
@@ -80,7 +87,7 @@
       </div>
     </div>
 
-    <div class='row'>
+    <div class='row' v-show="!control.loading">
       <div class='col-md-12'>
         <table class='table'>
           <thead>
@@ -154,7 +161,7 @@
         </ul>
       </div>
       <div class='col-md-6 newButton'>
-        <button type='button' class='btn btn-primary btn-lg' @click='showModal = !showModal'>
+        <button type='button' class='btn btn-primary btn-lg' @click='control.showModal = !control.showModal'>
           <span class='glyphicon glyphicon-plus-sign' aria-hidden='true'></span> Novo
         </button>
         <button type='button' class='btn btn-danger btn-lg' :disabled="(selecteds.length < 2)" @click='removeAny()'>
@@ -166,15 +173,25 @@
       </div>
     </div>
 
-    <spinner v-ref:spinner size="lg" :fixed="false"></spinner>
+    <spinner v-ref:spinner :size="'lg'" :fixed="true"></spinner>
 
-    {{ $data.selecteds | json }}
+    <alert :show.sync="control.API.visible" placement="top-right" :duration="control.API.duration" type="danger" :style="'margin-left: 20px;'" dismissable>
+      <span class="icon-info-circled alert-icon-float-left"></span>
+      <strong>{{ control.API.title }}</strong>
+      <p>{{ control.API.message }}</p>
+    </alert>
+
+    {{ $data | json }} <br><br>
+
+    user_id: {{ user_id }}
 
   </div>
 </template>
 
 <script>
-import { dropdown, modal, popover, input, formGroup, spinner } from 'vue-strap'
+import { dropdown, modal, popover, input, formGroup, alert, spinner, panel, accordion } from 'vue-strap'
+
+import topbar from 'topbar'
 
 export default {
 
@@ -184,19 +201,26 @@ export default {
         all: false
       },
       control: {
-        loading: false
+        loading: false,
+        showModal: false,
+        API: {
+          visible: false,
+          title: '',
+          message: '',
+          duration: 5000
+        }
       },
       selecteds: [],
       docs: [],
       collection: {
         email: '',
-        user: '',
+        name: '',
         password: '',
         admin: false,
-        active: 'true'
+        active: 'true',
+        createdById: this.user_id
       },
       passwordCheck: '',
-      showModal: false,
       crudController: {
         newModalTitle: 'Novo usuário'
       }
@@ -218,16 +242,40 @@ export default {
       }
     },
     getAll () {
+      topbar.show()
       this.$refs.spinner.show()
 
       // GET /someUrl
       this.$http.get('http://localhost:5000/users').then((response) => {
         console.log(response.body)
         this.docs = response.body
+        topbar.hide()
         this.$refs.spinner.hide()
       }, (response) => {
         // error callback
+        console.log('DEU MERDA')
+
+        this.APIAlert(true, 'Acesso a API DocMob', 'Houve um problema ao acessar a API do DocMob. Favor entrar em contato com o administrador do sistema. Obrigado.')
+
+        topbar.hide()
         this.$refs.spinner.hide()
+      })
+    },
+    newDoc () {
+      // POST /someUrl
+      this.$http.post('http://localhost:5000/users', this.collection, { emulateJSON: true }).then((response) => {
+        // get status
+        console.log(response.status)
+
+        // get status text
+        console.log(response.statusText)
+
+        // set data on vm
+        this.docs.push(response.body)
+      }, (response) => {
+        // error callback
+        console.log('deu erro na requisicao post', response.data.err.errors)
+        this.APIAlert(true, 'Erro na API', 'Houve um erro na tentativa de inserir o documento através da API.')
       })
     },
     removeAny (doc) {
@@ -263,6 +311,12 @@ export default {
           }
         )
       }
+    },
+    APIAlert (visible, title, message) {
+      // define mensagem de alerta sobre o erro no acesso a api
+      this.control.API.visible = visible
+      this.control.API.title = title
+      this.control.API.message = message
     }
   },
   components: {
@@ -271,11 +325,14 @@ export default {
     popover,
     'bsInput': input,
     formGroup,
-    spinner
+    spinner,
+    alert,
+    panel,
+    accordion
   },
   vuex: {
     getters: {
-      // charts: state => state.Dashboard.charts,
+      user_id: state => state.Dashboard.session.user_id
       // token: state => state.token
     }
   }
@@ -329,6 +386,13 @@ export default {
     width: 100%;
   }
 
+  .vcenter {
+      display: inline-block;
+      vertical-align: middle;
+      float: none;
+      text-align: center;
+      height: 10em;
+  }
 
 
 </style>
