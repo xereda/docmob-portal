@@ -1,6 +1,13 @@
 <template lang='html'>
 
-  <modal :title="crudController.newModalTitle"  :show.sync="control.showModal" effect="fade" large>
+  <modal :show.sync="control.modal.show" effect="fade" large>
+
+    <div slot="modal-header" class="modal-header">
+      <h4 class="modal-title">
+        {{ control.modal.title }}
+      </h4>
+    </div>
+
     <div slot="modal-body" class="modal-body">
       <div class="container-fluid">
 
@@ -11,10 +18,10 @@
                 <bs-input type="text" :value.sync="collection.name" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
               </div>
               <div class="col-md-6">
-                <bs-input type="email" :value.sync="collection.email" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
+                <bs-input type="email" :disabled="control.modal.state === 'UPDATE'" :value.sync="collection.email"  pattern="^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
               </div>
             </div>
-            <div class="row">
+            <div class="row"  v-if="control.modal.state === 'NEW'">
               <div class="col-md-6">
                 <bs-input type="password" :value.sync="collection.password" label="Senha" error="Informe corretamente a senha!" placeholder="Informe a senha do usuário" minlength="5" required icon></bs-input>
               </div>
@@ -38,25 +45,47 @@
                 </div>
               </div>
             </div>
+
+            <div class="row" style="margin-top: 1.5em;">
+              <div class="col-md-12" v-if="control.APIError.visible">
+
+                <accordion :one-at-atime="true" type="danger">
+                  <panel type="danger">
+                    <strong slot="header"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ control.APIError.title }}</strong>
+
+                    <dl class="row" v-for="e in control.APIError.message.err.errors" v-if="((control.APIError.message.err) && (control.APIError.message.err.errmsg) && (control.APIError.message.err.errmsg.length > 0))">
+                      <dt class="col-sm-3">{{ $key }}</dt>
+                      <dd class="col-sm-9">{{ e.message }}</dd>
+                    </dl>
+
+                    <dl class="row" v-if="((control.APIError.message.error) && (control.APIError.message.error.length > 0))">
+                      <dd class="col-sm-12">{{ control.APIError.message.error }}</dd>
+                    </dl>
+
+                    <dl class="row" v-if="((control.APIError.message.err) && (control.APIError.message.err.errmsg) && (control.APIError.message.err.errmsg.length > 0))">
+                      <dd class="col-sm-12">{{ control.APIError.message.err.errmsg }}</dd>
+                    </dl>
+
+                  </panel>
+                </accordion>
+
+              </div>
+            </div>
+
           </form-group>
         </form>
-
-        <accordion :one-at-atime="true" type="danger" v-show="control.API.visible">
-          <panel type="danger">
-            <strong slot="header"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Erros retornados pela API</strong>
-            {{  }}
-          </panel>
-        </accordion>
-
       </div>
 
 
     </div>
     <div slot="modal-footer" class="modal-footer">
-      <button type="button" class="btn btn-default" @click="control.showModal = false">
+      <button type="button" class="btn btn-default" @click="control.modal.show = false">
         <span class='glyphicon glyphicon-off' aria-hidden='true'></span> Sair
       </button>
-      <button type="button" class="btn btn-success" @click="newDoc()" :disabled="(valid.all === false)">
+      <button type="button" v-if="control.modal.state === 'NEW'" class="btn btn-success" @click="newDoc()" :disabled="(valid.all === false)">
+        <span class='glyphicon glyphicon-floppy-disk' aria-hidden='true'></span> Salvar
+      </button>
+      <button type="button" v-if="control.modal.state === 'UPDATE'" class="btn btn-success" @click="updateDoc()" :disabled="(valid.all === false)">
         <span class='glyphicon glyphicon-floppy-disk' aria-hidden='true'></span> Salvar
       </button>
     </div>
@@ -115,7 +144,7 @@
                 <button type='button' class='btn btn-info btn-xs' aria-label='visualizar'>
                   <span class='glyphicon glyphicon-search' aria-hidden='true'></span>
                 </button>
-                <button type='button' class='btn btn-warning btn-xs' aria-label='editar'>
+                <button type='button' class='btn btn-warning btn-xs' @click="modalUpdate(doc)" aria-label='editar'>
                   <span class='glyphicon glyphicon-pencil' aria-hidden='true'></span>
                 </button>
                 <button type='button' class='btn btn-danger btn-xs' @click='removeAny("99999")' aria-label='excluir'>
@@ -161,7 +190,7 @@
         </ul>
       </div>
       <div class='col-md-6 newButton'>
-        <button type='button' class='btn btn-primary btn-lg' @click='control.showModal = !control.showModal'>
+        <button type='button' class='btn btn-primary btn-lg' @click='modalNew()'>
           <span class='glyphicon glyphicon-plus-sign' aria-hidden='true'></span> Novo
         </button>
         <button type='button' class='btn btn-danger btn-lg' :disabled="(selecteds.length < 2)" @click='removeAny()'>
@@ -175,15 +204,13 @@
 
     <spinner v-ref:spinner :size="'lg'" :fixed="true"></spinner>
 
-    <alert :show.sync="control.API.visible" placement="top-right" :duration="control.API.duration" type="danger" :style="'margin-left: 20px;'" dismissable>
+    <alert :show.sync="control.APIAlert.visible" placement="top-right" :duration="control.APIAlert.duration" type="danger" :style="'margin-left: 20px;'" dismissable>
       <span class="icon-info-circled alert-icon-float-left"></span>
-      <strong>{{ control.API.title }}</strong>
-      <p>{{ control.API.message }}</p>
+      <strong>{{ control.APIAlert.title }}</strong>
+      <p>{{ control.APIAlert.message }}</p>
     </alert>
 
-    {{ $data | json }} <br><br>
-
-    user_id: {{ user_id }}
+    {{ $data.collection | json }} <br><br>
 
   </div>
 </template>
@@ -202,12 +229,21 @@ export default {
       },
       control: {
         loading: false,
-        showModal: false,
-        API: {
+        modal: {
+          show: false,
+          state: '',
+          title: ''
+        },
+        APIAlert: {
           visible: false,
           title: '',
           message: '',
           duration: 5000
+        },
+        APIError: {
+          visible: false,
+          title: '',
+          message: ''
         }
       },
       selecteds: [],
@@ -218,12 +254,9 @@ export default {
         password: '',
         admin: false,
         active: 'true',
-        createdById: this.user_id
+        createdById: ''
       },
-      passwordCheck: '',
-      crudController: {
-        newModalTitle: 'Novo usuário'
-      }
+      passwordCheck: ''
     }
   },
   computed: {
@@ -246,7 +279,7 @@ export default {
       this.$refs.spinner.show()
 
       // GET /someUrl
-      this.$http.get('http://localhost:5000/users').then((response) => {
+      this.$http.get('http://localhost:5000/users/?_fields=_id,name,email,active,admin').then((response) => {
         console.log(response.body)
         this.docs = response.body
         topbar.hide()
@@ -262,6 +295,8 @@ export default {
       })
     },
     newDoc () {
+      this.collection.createdById = this.user_id
+
       // POST /someUrl
       this.$http.post('http://localhost:5000/users', this.collection, { emulateJSON: true }).then((response) => {
         // get status
@@ -274,9 +309,44 @@ export default {
         this.docs.push(response.body)
       }, (response) => {
         // error callback
-        console.log('deu erro na requisicao post', response.data.err.errors)
-        this.APIAlert(true, 'Erro na API', 'Houve um erro na tentativa de inserir o documento através da API.')
+        console.log('response: ', response)
+        console.log('response.data.err.errors: ', response.data.err.errors)
+        this.APIAlert(true, 'Erro com a API', 'Verifique os detalhes do erro no rodapé desta janela.')
+        this.APIError(true, 'Erro ao tentar inserir um documento com a API', response.data)
       })
+    },
+    updateDoc () {
+      // POST /someUrl
+      this.$http.put('http://localhost:5000/users', this.collection, { emulateJSON: true }).then((response) => {
+        // get status
+        console.log(response.status)
+
+        // get status text
+        console.log(response.statusText)
+      }, (response) => {
+        // error callback
+        console.log('response: ', response)
+        if ((response.data) && (response.data.err) && (response.data.err.errors !== undefined)) {
+          console.log('response.data.err.errors: ', response.data.err.errors)
+        }
+        this.APIAlert(true, 'Erro com a API', 'Verifique os detalhes do erro no rodapé desta janela.')
+        this.APIError(true, 'Erro ao tentar atualizar um documento com a API', response.data)
+      })
+    },
+    modalNew () {
+      this.passwordCheck = ''
+      this.control.APIError.visible = false
+      this.control.modal.title = 'Novo usuário'
+      this.control.modal.state = 'NEW'
+      this.control.modal.show = true
+    },
+    modalUpdate (doc) {
+      console.log('dentro da funcao modalupdate: ', doc)
+      this.collection = doc
+      this.control.APIError.visible = false
+      this.control.modal.title = 'Atualizando o usuário ' + doc.name
+      this.control.modal.state = 'UPDATE'
+      this.control.modal.show = true
     },
     removeAny (doc) {
       console.log(doc)
@@ -314,9 +384,15 @@ export default {
     },
     APIAlert (visible, title, message) {
       // define mensagem de alerta sobre o erro no acesso a api
-      this.control.API.visible = visible
-      this.control.API.title = title
-      this.control.API.message = message
+      this.control.APIAlert.visible = visible
+      this.control.APIAlert.title = title
+      this.control.APIAlert.message = message
+    },
+    APIError (visible, title, message) {
+      // define mensagem de alerta sobre o erro ao tentar inserir um documento com a api
+      this.control.APIError.visible = visible
+      this.control.APIError.title = title
+      this.control.APIError.message = message
     }
   },
   components: {
@@ -393,6 +469,5 @@ export default {
       text-align: center;
       height: 10em;
   }
-
 
 </style>
