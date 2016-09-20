@@ -47,16 +47,18 @@
             </div>
 
             <div class="row" style="margin-top: 1.5em;">
-              <div class="col-md-12" v-if="control.APIError.visible">
+              <div class="col-md-12 animated"  v-animation v-if="control.APIError.visible">
 
                 <accordion :one-at-atime="true" type="danger">
                   <panel type="danger">
                     <strong slot="header"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ control.APIError.title }}</strong>
 
-                    <dl class="row" v-for="e in control.APIError.message.err.errors" v-if="((control.APIError.message.err) && (control.APIError.message.err.errmsg) && (control.APIError.message.err.errmsg.length > 0))">
-                      <dt class="col-sm-3">{{ $key }}</dt>
-                      <dd class="col-sm-9">{{ e.message }}</dd>
-                    </dl>
+                    <div v-if="((control.APIError.message.err) && (control.APIError.message.err.errors))">
+                      <dl class="row" v-for="e in control.APIError.message.err.errors" >
+                        <dt class="col-sm-3">{{ $key }}</dt>
+                        <dd class="col-sm-9">{{ e.message }}</dd>
+                      </dl>
+                    </div>
 
                     <dl class="row" v-if="((control.APIError.message.error) && (control.APIError.message.error.length > 0))">
                       <dd class="col-sm-12">{{ control.APIError.message.error }}</dd>
@@ -138,6 +140,7 @@
             </tr>
           </thead>
           <tbody>
+            <spinner v-ref:spinner size="xl"></spinner>
             <tr v-for="doc in docs" :class="(selecteds.indexOf(doc._id) > -1) ? 'info': ''" style="cursor: pointer;">
               <td>
                 <input type='checkbox' class='lg' v-model='selecteds' :value='doc._id'>
@@ -202,8 +205,6 @@
       </div>
     </div>
 
-    <spinner v-ref:spinner :size="'lg'" :fixed="true"></spinner>
-
     <alert :show.sync="control.APIAlert.visible" placement="top-right" :duration="control.APIAlert.duration" type="danger" :style="'margin-left: 20px;'" dismissable>
       <span class="icon-info-circled alert-icon-float-left"></span>
       <strong>{{ control.APIAlert.title }}</strong>
@@ -263,6 +264,7 @@ export default {
     // charts: []
   },
   ready () {
+    this.getAll()
   },
   attached () {},
   methods: {
@@ -297,6 +299,9 @@ export default {
     newDoc () {
       this.collection.createdById = this.user_id
 
+      this.APIAlert(false, '')
+      this.APIError(false, '', {})
+
       // POST /someUrl
       this.$http.post('http://localhost:5000/users', this.collection, { emulateJSON: true }).then((response) => {
         // get status
@@ -316,6 +321,11 @@ export default {
       })
     },
     updateDoc () {
+      this.collection.updatedById = this.user_id
+
+      this.APIAlert(false, '')
+      this.APIError(false, '', {})
+
       // POST /someUrl
       this.$http.put('http://localhost:5000/users', this.collection, { emulateJSON: true }).then((response) => {
         // get status
@@ -334,6 +344,9 @@ export default {
       })
     },
     modalNew () {
+      this.APIAlert(false, '')
+      this.APIError(false, '', {})
+      this.collection = {}
       this.passwordCheck = ''
       this.control.APIError.visible = false
       this.control.modal.title = 'Novo usuário'
@@ -342,6 +355,8 @@ export default {
     },
     modalUpdate (doc) {
       console.log('dentro da funcao modalupdate: ', doc)
+      this.APIAlert(false, '')
+      this.APIError(false, '', {})
       this.collection = doc
       this.control.APIError.visible = false
       this.control.modal.title = 'Atualizando o usuário ' + doc.name
@@ -469,5 +484,42 @@ export default {
       text-align: center;
       height: 10em;
   }
+
+  .animated {
+      display: inline-block;
+  }
+
+  .animated.v-enter {
+      animation: fadein 2s;
+  }
+
+  .animated.v-leave {
+      animation: fadeout 2s;
+  }
+
+  @keyframes fadein {
+      0% {
+          transform: scale(0);
+      }
+      50% {
+          transform: scale(1.5);
+      }
+      100% {
+          transform: scale(1);
+      }
+  }
+
+  @keyframes fadeout {
+      0% {
+          transform: scale(1);
+      }
+      50% {
+          transform: scale(1.5);
+      }
+      100% {
+          transform: scale(0);
+      }
+  }
+
 
 </style>
