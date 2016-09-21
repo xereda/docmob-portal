@@ -15,10 +15,10 @@
           <form-group :valid.sync="valid.all">
             <div class="row">
               <div class="col-md-6">
-                <bs-input type="text" :value.sync="collection.name" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
+                <bs-input :value.sync="collection.name" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
               </div>
               <div class="col-md-6">
-                <bs-input type="email" :disabled="control.modal.state === 'UPDATE'" :value.sync="collection.email"  pattern="^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
+                <bs-input :disabled="control.modal.state === 'UPDATE'" :value.sync="collection.email"  pattern="^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
               </div>
             </div>
             <div class="row"  v-if="control.modal.state === 'NEW'">
@@ -47,7 +47,7 @@
             </div>
 
             <div class="row" style="margin-top: 1.5em;">
-              <div class="col-md-12 animated"  v-animation v-if="control.APIError.visible">
+              <div class="col-md-12" v-if="control.APIError.visible">
 
                 <accordion :one-at-atime="true" type="danger">
                   <panel type="danger">
@@ -225,6 +225,14 @@ export default {
 
   data () {
     return {
+      collection: {
+        email: '',
+        name: '',
+        password: '',
+        admin: false,
+        active: 'true',
+        createdById: ''
+      },
       valid: {
         all: false
       },
@@ -249,14 +257,6 @@ export default {
       },
       selecteds: [],
       docs: [],
-      collection: {
-        email: '',
-        name: '',
-        password: '',
-        admin: false,
-        active: 'true',
-        createdById: ''
-      },
       passwordCheck: ''
     }
   },
@@ -265,6 +265,8 @@ export default {
   },
   ready () {
     this.getAll()
+  },
+  created () {
   },
   attached () {},
   methods: {
@@ -310,8 +312,9 @@ export default {
         // get status text
         console.log(response.statusText)
 
-        // set data on vm
-        this.docs.push(response.body)
+        this.stateUpdate({ title: 'OK', message: 'O usuário foi criado com sucesso' })
+
+        // final do bloco
       }, (response) => {
         // error callback
         console.log('response: ', response)
@@ -333,6 +336,10 @@ export default {
 
         // get status text
         console.log(response.statusText)
+
+        this.stateUpdate({ title: 'Atualizado', message: 'O usuário foi atualizado com sucesso' })
+
+        // fim bloco
       }, (response) => {
         // error callback
         console.log('response: ', response)
@@ -344,24 +351,28 @@ export default {
       })
     },
     modalNew () {
+      this.dataObjectDefinition()
+      this.valid.all = undefined
       this.APIAlert(false, '')
       this.APIError(false, '', {})
-      this.collection = {}
       this.passwordCheck = ''
       this.control.APIError.visible = false
-      this.control.modal.title = 'Novo usuário'
-      this.control.modal.state = 'NEW'
-      this.control.modal.show = true
+      this.modalControl({ title: 'Novo usuário',
+                          state: 'NEW',
+                          show: true })
     },
-    modalUpdate (doc) {
+    modalUpdate (_doc) {
+      this.dataObjectDefinition()
+      this.valid.all = undefined
+      const doc = JSON.parse(JSON.stringify(_doc))
       console.log('dentro da funcao modalupdate: ', doc)
       this.APIAlert(false, '')
       this.APIError(false, '', {})
       this.collection = doc
       this.control.APIError.visible = false
-      this.control.modal.title = 'Atualizando o usuário ' + doc.name
-      this.control.modal.state = 'UPDATE'
-      this.control.modal.show = true
+      this.modalControl({ title: 'Atualizando o usuário ' + doc.name,
+                          state: 'UPDATE',
+                          show: true })
     },
     removeAny (doc) {
       console.log(doc)
@@ -408,6 +419,33 @@ export default {
       this.control.APIError.visible = visible
       this.control.APIError.title = title
       this.control.APIError.message = message
+    },
+    modalControl (params) {
+      this.control.modal.title = params.title
+      this.control.modal.state = params.state
+      this.control.modal.show = params.show
+    },
+    stateUpdate (params) {
+      swal(params.title, params.message, 'success')
+
+      this.modalControl({ title: '',
+                          state: '',
+                          show: false })
+
+      this.dataObjectDefinition()
+
+      this.getAll()
+    },
+    dataObjectDefinition () {
+      this.collection = {
+        email: '',
+        name: '',
+        password: '',
+        admin: false,
+        active: 'true',
+        createdById: ''
+      }
+      this.valid.all = null
     }
   },
   components: {
@@ -485,41 +523,6 @@ export default {
       height: 10em;
   }
 
-  .animated {
-      display: inline-block;
-  }
-
-  .animated.v-enter {
-      animation: fadein 2s;
-  }
-
-  .animated.v-leave {
-      animation: fadeout 2s;
-  }
-
-  @keyframes fadein {
-      0% {
-          transform: scale(0);
-      }
-      50% {
-          transform: scale(1.5);
-      }
-      100% {
-          transform: scale(1);
-      }
-  }
-
-  @keyframes fadeout {
-      0% {
-          transform: scale(1);
-      }
-      50% {
-          transform: scale(1.5);
-      }
-      100% {
-          transform: scale(0);
-      }
-  }
 
 
 </style>

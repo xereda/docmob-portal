@@ -1,5 +1,5 @@
 export default {
   session: {
-    user_id: '57a2bb75be785a529de5fb33'
+    user_id: '57e18e6ce493ac5316402b24'
   }
 }
