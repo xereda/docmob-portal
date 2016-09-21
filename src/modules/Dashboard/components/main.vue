@@ -15,19 +15,25 @@
           <form-group :valid.sync="valid.all">
             <div class="row">
               <div class="col-md-6">
-                <bs-input :value.sync="collection.name" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
+                <form-group :valid.sync="valid.name">
+                  <bs-input :value.sync="collection.name" label="Nome" error="Informe corretamente o nome!" placeholder="Informe o nome" pattern="^[A-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ ]+$" :mask="mask" minlength="5" required icon></bs-input>
+                </form-group>
               </div>
               <div class="col-md-6">
-                <bs-input :disabled="control.modal.state === 'UPDATE'" :value.sync="collection.email"  pattern="^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
+                <form-group :valid.sync="valid.email">
+                  <bs-input :disabled="control.modal.state === 'UPDATE'" :value.sync="collection.email"  pattern="^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$" label="E-mail" error="Informe um e-mail válido!" placeholder="Informe o e-mail" minlength="5" required icon></bs-input>
+                </form-group>
               </div>
             </div>
             <div class="row"  v-if="control.modal.state === 'NEW'">
-              <div class="col-md-6">
-                <bs-input type="password" :value.sync="collection.password" label="Senha" error="Informe corretamente a senha!" placeholder="Informe a senha do usuário" minlength="5" required icon></bs-input>
-              </div>
-              <div class="col-md-6">
-                <bs-input :match="collection.password" type="password" label="Repita a senha" error="Informe a mesma senha!" placeholder="Repita a senha do usuário" minlength="5" required icon></bs-input>
-              </div>
+              <form-group :valid.sync="valid.password">
+                <div class="col-md-6">
+                    <bs-input type="password" :value.sync="collection.password" label="Senha" error="Informe corretamente a senha!" placeholder="Informe a senha do usuário" minlength="5" required icon></bs-input>
+                </div>
+                <div class="col-md-6">
+                  <bs-input :match="collection.password" type="password" label="Repita a senha" error="Informe a mesma senha!" placeholder="Repita a senha do usuário" minlength="5" required icon></bs-input>
+                </div>
+              </form-group>
             </div>
             <div class="row">
               <div class="col-md-2">
@@ -445,7 +451,7 @@ export default {
         active: 'true',
         createdById: ''
       }
-      this.valid.all = null
+      this.valid = {}
     }
   },
   components: {
